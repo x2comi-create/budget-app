@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ErrorBoundary from './components/ErrorBoundary'
 import SideNav from './components/SideNav'
 import BottomNav from './components/BottomNav'
 import Dashboard from './pages/Dashboard'
@@ -13,6 +14,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('home')
 
   return (
+    <ErrorBoundary>
     <div className="min-h-svh bg-slate-50 flex">
       <SideNav active={tab} onChange={setTab} />
       <main className="flex-1 md:ml-56 min-h-svh">
@@ -28,5 +30,6 @@ export default function App() {
         <BottomNav active={tab} onChange={setTab} />
       </div>
     </div>
+    </ErrorBoundary>
   )
 }

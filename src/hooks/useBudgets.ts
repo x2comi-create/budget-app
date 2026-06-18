@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { onEvent, emitEvent } from '../lib/events'
 import type { Budget } from '../types'
 
 function toBudget(row: Record<string, unknown>): Budget {
@@ -24,12 +25,8 @@ export function useBudgets(yearMonth: string) {
 
   useEffect(() => {
     fetchBudgets()
-    const channel = supabase
-      .channel(`budgets-${yearMonth}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'budgets' }, fetchBudgets)
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [yearMonth, fetchBudgets])
+    return onEvent('budgets', fetchBudgets)
+  }, [fetchBudgets])
 
   return budgets
 }
@@ -40,6 +37,7 @@ export async function setBudget(yearMonth: string, categoryId: string, amount: n
     .upsert({ year_month: yearMonth, category_id: categoryId, amount },
              { onConflict: 'year_month,category_id' })
   if (error) throw error
+  emitEvent('budgets')
 }
 
 export async function getBudget(yearMonth: string, categoryId: string): Promise<number> {

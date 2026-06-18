@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { onEvent, emitEvent } from '../lib/events'
 import { getMonthRange } from '../utils'
 import type { Expense } from '../types'
 
@@ -33,12 +34,8 @@ export function useExpensesByMonth(yearMonth: string) {
 
   useEffect(() => {
     fetchExpenses()
-    const channel = supabase
-      .channel(`expenses-${yearMonth}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchExpenses)
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [yearMonth, fetchExpenses])
+    return onEvent('expenses', fetchExpenses)
+  }, [fetchExpenses])
 
   return expenses
 }
@@ -55,6 +52,7 @@ export async function addExpense(expense: Omit<Expense, 'id'>) {
     is_no_spend: expense.isNoSpend ?? false,
   })
   if (error) throw error
+  emitEvent('expenses')
 }
 
 export async function updateExpense(id: number, expense: Partial<Expense>) {
@@ -68,9 +66,11 @@ export async function updateExpense(id: number, expense: Partial<Expense>) {
     ...(expense.memo !== undefined && { memo: expense.memo }),
   }).eq('id', id)
   if (error) throw error
+  emitEvent('expenses')
 }
 
 export async function deleteExpense(id: number) {
   const { error } = await supabase.from('expenses').delete().eq('id', id)
   if (error) throw error
+  emitEvent('expenses')
 }
